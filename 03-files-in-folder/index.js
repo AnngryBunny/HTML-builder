@@ -22,10 +22,11 @@ fs.readdir(pathSecretFolder, (err, files) => {
       if (stats.isFile()) {
         // Display file data in the console
 
+        let fileExtension = path.extname(file);
+        let fileName = path.basename(file, fileExtension);
+
         process.stdout.write(
-          `${file.slice(0, -4)} - ${path.extname(file).slice(1)} - ${
-            stats.size / 1000
-          }kb\n`,
+          `${fileName} - ${fileExtension.slice(1)} - ${stats.size / 1000}kb\n`,
         );
       }
     });
