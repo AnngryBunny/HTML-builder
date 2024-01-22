@@ -26,7 +26,7 @@ fs.readdir(pathSecretFolder, (err, files) => {
         let fileName = path.basename(file, fileExtension);
 
         process.stdout.write(
-          `${fileName} - ${fileExtension.slice(1)} - ${stats.size / 1000}kb\n`,
+          `${fileName} - ${fileExtension.slice(1)} - ${stats.size}b\n`,
         );
       }
     });
