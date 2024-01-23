@@ -1,6 +1,7 @@
 // Import all required modules
 
 const path = require('node:path');
+const fs = require('fs');
 const fsPromises = require('fs').promises;
 
 // Paths
@@ -8,20 +9,37 @@ const fsPromises = require('fs').promises;
 const templatePath = path.join(__dirname, 'template.html');
 const componentsPath = path.join(__dirname, 'components');
 const indexPath = path.join(__dirname, 'project-dist', 'index.html');
+const stylesPath = path.join(__dirname, 'styles');
+const cssPath = path.join(__dirname, 'project-dist', 'style.css');
+
+const projectDistPath = path.join(__dirname, 'project-dist');
+const assetsPath = path.join(__dirname, 'assets');
+
+const cssWriteStream = fs.createWriteStream(cssPath);
 
 // Variables
 
 let content;
 let components;
+let styles;
 
 // Create 'project-dist' folder
 
 async function createFolder() {
-  const folders = await fsPromises.readdir(__dirname);
-
-  if (!folders.includes('project-dist')) {
-    fsPromises.mkdir(path.join(__dirname, 'project-dist'));
-  }
+  fsPromises.readdir(__dirname, (err, files) => {
+    if (![...files].includes('project-dist')) {
+      fsPromises.mkdir(path.join(__dirname, 'project-dist'));
+    } else {
+      fsPromises.rm(
+        path.join(__dirname, 'project-dist'),
+        { recursive: true },
+        (err) => {
+          if (err) throw err;
+          createFolder();
+        },
+      );
+    }
+  });
 }
 
 // Read and save the template file in a variable
@@ -66,6 +84,30 @@ async function modifyIndexFile() {
 
 // Use the script written in task **05-merge-styles** to create the `style.css` file
 
+async function readStyles() {
+  styles = await fsPromises.readdir(stylesPath);
+  return styles;
+}
+
+async function createCssFile() {
+  fsPromises.readdir(projectDistPath, (err, files) => {
+    if (![...files].includes('styles.css')) {
+      fsPromises.appendFile(cssPath, '');
+    } else {
+      fsPromises.unlink(cssPath);
+      createCssFile();
+    }
+  });
+}
+
+async function modifyCssFile() {
+  for (let style of styles) {
+    const stylePath = path.join(__dirname, 'styles', style);
+    const styleReadStream = fs.createReadStream(stylePath, 'utf-8');
+    styleReadStream.pipe(cssWriteStream);
+  }
+}
+
 // Use the script from task **04-copy-directory** to move the `assets` folder into the `project-dist` folder
 
 // IIFE
@@ -76,6 +118,10 @@ async function modifyIndexFile() {
   await readComponents();
   await replaceTags();
   await modifyIndexFile();
+  await readStyles();
+  await createCssFile();
+  await modifyCssFile();
+  await removeAssets();
 })();
 
 // node 06-build-page
