@@ -1,8 +1,11 @@
 // Import all required modules
 
+const fs = require('fs');
+const path = require('node:path');
+
 // Read and save the template file in a variable
 
-// Find all tag names in the template file
+const templatePath = path.join(__dirname, 'template.html');
 
 // Replace template tags with the content of component files
 
