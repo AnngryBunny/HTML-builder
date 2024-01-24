@@ -11,9 +11,9 @@ const componentsPath = path.join(__dirname, 'components');
 const indexPath = path.join(__dirname, 'project-dist', 'index.html');
 const stylesPath = path.join(__dirname, 'styles');
 const cssPath = path.join(__dirname, 'project-dist', 'style.css');
-
 const projectDistPath = path.join(__dirname, 'project-dist');
 const assetsPath = path.join(__dirname, 'assets');
+const assetsCopyPath = path.join(__dirname, 'project-dist', 'assets');
 
 const cssWriteStream = fs.createWriteStream(cssPath);
 
@@ -26,20 +26,7 @@ let styles;
 // Create 'project-dist' folder
 
 async function createFolder() {
-  fsPromises.readdir(__dirname, (err, files) => {
-    if (![...files].includes('project-dist')) {
-      fsPromises.mkdir(path.join(__dirname, 'project-dist'));
-    } else {
-      fsPromises.rm(
-        path.join(__dirname, 'project-dist'),
-        { recursive: true },
-        (err) => {
-          if (err) throw err;
-          createFolder();
-        },
-      );
-    }
-  });
+  await fsPromises.mkdir(projectDistPath, { recursive: true });
 }
 
 // Read and save the template file in a variable
@@ -110,6 +97,31 @@ async function modifyCssFile() {
 
 // Use the script from task **04-copy-directory** to move the `assets` folder into the `project-dist` folder
 
+async function copyAssetsSubfolder(copyPath) {
+  await fsPromises.rm(copyPath, { recursive: true, force: true });
+  await fsPromises.mkdir(copyPath, { recursive: true });
+}
+
+async function copyAssets(assetsPath, assetsCopyPath) {
+  const assets = await fsPromises.readdir(assetsPath, {
+    withFileTypes: true,
+  });
+
+  for (let file of assets) {
+    const filePath = path.join(file.path, file.name);
+
+    if (file.isDirectory()) {
+      const copyFolderPath = path.join(assetsCopyPath, file.name);
+      await copyAssetsSubfolder(copyFolderPath);
+      await copyAssets(filePath, copyFolderPath);
+    } else {
+      const origin = filePath;
+      const copy = path.join(assetsCopyPath, file.name);
+      await fsPromises.copyFile(origin, copy);
+    }
+  }
+}
+
 // IIFE
 
 (async function () {
@@ -121,7 +133,7 @@ async function modifyCssFile() {
   await readStyles();
   await createCssFile();
   await modifyCssFile();
-  await removeAssets();
+  await copyAssets(assetsPath, assetsCopyPath);
 })();
 
 // node 06-build-page
